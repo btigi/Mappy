@@ -34,12 +34,15 @@
             // mapView
             // 
             this.mapView.AllowDrop = true;
+            this.mapView.AutoScroll = true;
             this.mapView.CanvasSize = new System.Drawing.Size(0, 0);
             this.mapView.Dock = System.Windows.Forms.DockStyle.Fill;
             this.mapView.Location = new System.Drawing.Point(0, 0);
+            this.mapView.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.mapView.Name = "mapView";
-            this.mapView.Size = new System.Drawing.Size(150, 150);
+            this.mapView.Size = new System.Drawing.Size(225, 231);
             this.mapView.TabIndex = 0;
+            this.mapView.TabStop = false;
             this.mapView.Text = "imageLayerView1";
             this.mapView.SizeChanged += new System.EventHandler(this.MapViewSizeChanged);
             this.mapView.DragDrop += new System.Windows.Forms.DragEventHandler(this.MapViewDragDrop);
@@ -53,10 +56,12 @@
             // 
             // MapViewPanel
             // 
-            this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
+            this.AutoScaleDimensions = new System.Drawing.SizeF(9F, 20F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.Controls.Add(this.mapView);
+            this.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.Name = "MapViewPanel";
+            this.Size = new System.Drawing.Size(225, 231);
             this.ResumeLayout(false);
 
         }

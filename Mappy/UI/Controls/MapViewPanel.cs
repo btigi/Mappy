@@ -1,16 +1,25 @@
 ﻿namespace Mappy.UI.Controls
 {
     using System;
+    using System.Collections.Generic;
     using System.Drawing;
+    using System.Threading;
+    using System.Threading.Tasks;
     using System.Windows.Forms;
 
     using Mappy.Models;
 
     public partial class MapViewPanel : UserControl
     {
+        private static object timerlock = new object();
+
+        private static List<CancellationTokenSource> debounceCancelTokens = new List<CancellationTokenSource>();
+
         private IMapViewViewModel model;
 
         private Point oldAutoScrollPos;
+
+        private bool shouldScrollAtEdge = true;
 
         public MapViewPanel()
         {
@@ -45,17 +54,33 @@
         {
             var loc = this.mapView.ToVirtualPoint(e.Location);
             this.model.MouseDown(loc);
+            this.shouldScrollAtEdge = true;
         }
 
         private void MapViewMouseMove(object sender, MouseEventArgs e)
         {
             var loc = this.mapView.ToVirtualPoint(e.Location);
             this.model.MouseMove(loc);
+            var currentScrollPos = this.mapView.AutoScrollOffset;
+            Console.WriteLine("Moved " + e.Location.X + " " + e.Location.Y);
+            Console.WriteLine("X " + loc.X + " " + loc.Y);
+            if (this.shouldScrollAtEdge && loc.X > this.Width * 0.9)
+            {
+                // Console.WriteLine("X " + loc.X + " " + loc.Y);
+                this.DebounceAutoScroll(new Point(-currentScrollPos.X + 10, currentScrollPos.Y));
+            }
+
+            if (this.shouldScrollAtEdge && loc.Y > this.Height * 0.9)
+            {
+                // Console.WriteLine("X " + loc.X + " " + loc.Y);
+                this.DebounceAutoScroll(new Point(currentScrollPos.X, -currentScrollPos.Y + 10));
+            }
         }
 
         private void MapViewMouseUp(object sender, MouseEventArgs e)
         {
             this.model.MouseUp();
+            //this.shouldScrollAtEdge = false;
         }
 
         private void MapViewKeyDown(object sender, KeyEventArgs e)
@@ -93,6 +118,52 @@
                 var loc = new Point(pos.X * -1, pos.Y * -1);
                 this.model.ScrollPositionChanged(loc);
                 this.oldAutoScrollPos = pos;
+            }
+        }
+
+        private void DebounceAutoScroll(Point newScrollLoc)
+        {
+            // 4.0 so old, no access to Task.Run() or Task.Delay()
+            object taskObj = Task.Factory.StartNew(() =>
+            {
+                var newDebounceToken = new CancellationTokenSource();
+                lock (timerlock)
+                {
+                    this.CancelDebouncingTokens();
+                    debounceCancelTokens.Add(newDebounceToken);
+                }
+
+                Thread.Sleep(500);
+
+                if (!newDebounceToken.IsCancellationRequested)
+                {
+                    this.CancelDebouncingTokens();
+                    debounceCancelTokens = new List<CancellationTokenSource>();
+                    lock (timerlock)
+                    {
+                        this.mapView.AutoScrollPosition = newScrollLoc;
+
+                        this.mapView.VerticalScroll.Value = newScrollLoc.Y;
+                        this.mapView.VerticalScroll.Value = newScrollLoc.Y;
+
+                        this.mapView.HorizontalScroll.Value = newScrollLoc.X;
+                        this.mapView.HorizontalScroll.Value = newScrollLoc.X;
+
+                        this.model.ScrollPositionChanged(newScrollLoc);
+                        this.oldAutoScrollPos = newScrollLoc;
+                    }
+                }
+            });
+        }
+
+        private void CancelDebouncingTokens()
+        {
+            foreach (var token in debounceCancelTokens)
+            {
+                if (!token.IsCancellationRequested)
+                {
+                    token.Cancel();
+                }
             }
         }
     }
