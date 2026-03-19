@@ -1128,19 +1128,24 @@ namespace Mappy.Models
                 return;
             }
 
-            var anchor = Util.ScreenToHeightIndex(this.mapModel.BaseTile.HeightGrid, location);
-            if (!anchor.HasValue)
+            var center = Util.ScreenToHeightIndex(this.mapModel.BaseTile.HeightGrid, location);
+            if (!center.HasValue)
             {
                 this.ClearVoidCursor();
                 return;
             }
 
             var grid = this.mapModel.BaseTile.HeightGrid;
+            var width = grid.Width;
+            var height = grid.Height;
             var size = Math.Max(1, this.voidEditCursorSize);
-            var startX = anchor.Value.X;
-            var startY = anchor.Value.Y;
-            var endX = Math.Min(grid.Width, startX + size);
-            var endY = Math.Min(grid.Height, startY + size);
+
+            var endX = center.Value.X + 1;
+            var endY = center.Value.Y + 1;
+            var startX = Math.Max(0, endX - size);
+            var startY = Math.Max(0, endY - size);
+            endX = Math.Min(width, endX);
+            endY = Math.Min(height, endY);
             if (endX <= startX || endY <= startY)
             {
                 return;
